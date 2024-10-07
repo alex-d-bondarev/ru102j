@@ -15,7 +15,7 @@ public class HelloTest {
     public void sayHelloBasic() {
         Jedis jedis = new Jedis(HostPort.getRedisHost(), HostPort.getRedisPort());
 
-        if (HostPort.getRedisPassword().length() > 0) {
+        if (!HostPort.getRedisPassword().isEmpty()) {
             jedis.auth(HostPort.getRedisPassword());
         }
 
@@ -29,7 +29,7 @@ public class HelloTest {
     public void sayHello() {
         Jedis jedis = new Jedis(HostPort.getRedisHost(), HostPort.getRedisPort());
 
-        if (HostPort.getRedisPassword().length() > 0) {
+        if (!HostPort.getRedisPassword().isEmpty()) {
             jedis.auth(HostPort.getRedisPassword());
         }
 
@@ -47,7 +47,7 @@ public class HelloTest {
 
         String password = HostPort.getRedisPassword();
 
-        if (password.length() > 0) {
+        if (!password.isEmpty()) {
             jedisPool = new JedisPool(new JedisPoolConfig(),
                 HostPort.getRedisHost(), HostPort.getRedisPort(), 2000, password);
         } else {
