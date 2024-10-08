@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class SiteStatsDaoRedisImpl implements SiteStatsDao {
 
-    private final int weekSeconds = 60 * 60 * 24 * 7;
+    private final int WEEK_SECONDS = 60 * 60 * 24 * 7;
     private final JedisPool jedisPool;
     private final CompareAndUpdateScript compareAndUpdateScript;
 
@@ -47,7 +47,7 @@ public class SiteStatsDaoRedisImpl implements SiteStatsDao {
             ZonedDateTime day = reading.getDateTime();
             String key = RedisSchema.getSiteStatsKey(siteId, day);
 
-            updateBasic(jedis, key, reading);
+            updateOptimized(jedis, key, reading);
         }
     }
 
@@ -57,7 +57,7 @@ public class SiteStatsDaoRedisImpl implements SiteStatsDao {
         String reportingTime = ZonedDateTime.now(ZoneOffset.UTC).toString();
         jedis.hset(key, SiteStats.reportingTimeField, reportingTime);
         jedis.hincrBy(key, SiteStats.countField, 1);
-        jedis.expire(key, weekSeconds);
+        jedis.expire(key, WEEK_SECONDS);
 
         String maxWh = jedis.hget(key, SiteStats.maxWhField);
         if (maxWh == null || reading.getWhGenerated() > Double.valueOf(maxWh)) {
@@ -80,8 +80,20 @@ public class SiteStatsDaoRedisImpl implements SiteStatsDao {
 
     // Challenge #3
     private void updateOptimized(Jedis jedis, String key, MeterReading reading) {
-        // START Challenge #3
-        // END Challenge #3
+        CompareAndUpdateScript compareScript = new CompareAndUpdateScript(jedisPool);
+
+        Transaction jedisT = jedis.multi();
+
+        String reportingTime = ZonedDateTime.now(ZoneOffset.UTC).toString();
+        jedisT.hset(key, SiteStats.reportingTimeField, reportingTime);
+        jedisT.hincrBy(key, SiteStats.countField, 1);
+        jedisT.expire(key, WEEK_SECONDS);
+
+        compareScript.updateIfGreater(jedisT, key, SiteStats.maxWhField, reading.getWhGenerated());
+        compareScript.updateIfLess(jedisT, key, SiteStats.minWhField, reading.getWhGenerated());
+        compareScript.updateIfGreater(jedisT, key, SiteStats.maxCapacityField, getCurrentCapacity(reading));
+
+        jedisT.exec();
     }
 
     private Double getCurrentCapacity(MeterReading reading) {
