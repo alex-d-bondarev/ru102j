@@ -53,7 +53,7 @@ public class MetricDaoRedisZsetImpl implements MetricDao {
         String insertedValue = String.format("%f:%d", value, minuteOfDay);
 
         jedis.zadd(metricKey, minuteOfDay, insertedValue);
-
+        jedis.expire(metricKey, METRIC_EXPIRATION_SECONDS);
     }
 
     /**

@@ -110,7 +110,7 @@ Building
 
 To rebuild the application:
 
-```
+```shell
 mvn package
 ```
 
