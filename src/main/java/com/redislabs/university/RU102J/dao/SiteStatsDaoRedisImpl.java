@@ -80,20 +80,20 @@ public class SiteStatsDaoRedisImpl implements SiteStatsDao {
 
     // Challenge #3
     private void updateOptimized(Jedis jedis, String key, MeterReading reading) {
-        CompareAndUpdateScript compareScript = new CompareAndUpdateScript(jedisPool);
-
-        Transaction jedisT = jedis.multi();
-
         String reportingTime = ZonedDateTime.now(ZoneOffset.UTC).toString();
-        jedisT.hset(key, SiteStats.reportingTimeField, reportingTime);
-        jedisT.hincrBy(key, SiteStats.countField, 1);
-        jedisT.expire(key, WEEK_SECONDS);
 
-        compareScript.updateIfGreater(jedisT, key, SiteStats.maxWhField, reading.getWhGenerated());
-        compareScript.updateIfLess(jedisT, key, SiteStats.minWhField, reading.getWhGenerated());
-        compareScript.updateIfGreater(jedisT, key, SiteStats.maxCapacityField, getCurrentCapacity(reading));
+        try (Transaction jedisT = jedis.multi()) {
 
-        jedisT.exec();
+            jedisT.hset(key, SiteStats.reportingTimeField, reportingTime);
+            jedisT.hincrBy(key, SiteStats.countField, 1);
+            jedisT.expire(key, WEEK_SECONDS);
+
+            compareAndUpdateScript.updateIfGreater(jedisT, key, SiteStats.maxWhField, reading.getWhGenerated());
+            compareAndUpdateScript.updateIfLess(jedisT, key, SiteStats.minWhField, reading.getWhGenerated());
+            compareAndUpdateScript.updateIfGreater(jedisT, key, SiteStats.maxCapacityField, getCurrentCapacity(reading));
+
+            jedisT.exec();
+        }
     }
 
     private Double getCurrentCapacity(MeterReading reading) {
