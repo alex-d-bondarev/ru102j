@@ -39,8 +39,18 @@ public class RedisSchema {
                                     long maxHits) {
         return KeyHelper.getKey("limiter:" +
                 name + ":" +
-                String.valueOf(minuteBlock) + ":" +
-                String.valueOf(maxHits));
+                minuteBlock + ":" +
+                maxHits);
+    }
+
+    // [limiter]:[windowSize]:[name]:[maxHits]
+    // Redis type: string of type integer
+    static String getSlidingRateLimiterKey(String name, long windowSize,
+                                    long maxHits) {
+        return KeyHelper.getKey("limiter:" +
+                windowSize + ":" +
+                name + ":" +
+                maxHits);
     }
 
     // sites:geo
